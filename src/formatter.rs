@@ -8,7 +8,7 @@ struct FormattingInformations {
 }
 
 pub(crate) fn format(objects: Vec<Object>) -> String {
-    web_sys::console::debug_1(&format!("{objects:#?}").into());
+    // web_sys::console::log_1(&format!("{objects:?}").into());
 
     let mut infos = FormattingInformations::default();
     let mut r = format_internal(objects, &mut infos);
@@ -42,6 +42,20 @@ fn format_internal(objects: Vec<Object>, infos: &mut FormattingInformations) -> 
                     )
                 )
             }
+            Object::Image(url, alt) => {
+                if infos.in_paragraph {
+                    result.push_str("</p>");
+                    infos.in_paragraph = false;
+                }
+
+                result.push_str(
+                    &format!(
+                        r#"<img src="{u}" alt="{a}">"#,
+                        u = url,
+                        a = alt.clone().unwrap_or_else(|| "".to_string())
+                    )
+                )
+            }
             Object::Head(level, text) => {
                 if infos.in_paragraph {
                     result.push_str("</p>");
@@ -55,7 +69,7 @@ fn format_internal(objects: Vec<Object>, infos: &mut FormattingInformations) -> 
                 infos.is_paragraph = true;
             },
             Object::LineBreak => { result.push_str("<br>"); }
-            Object::Bold => {
+            Object::Bold | Object::Italic | Object::Underline | Object::StrikeThrough => {
                 if !infos.in_paragraph {
                     result.push_str("<p>");
                     infos.in_paragraph = true;
@@ -65,42 +79,26 @@ fn format_internal(objects: Vec<Object>, infos: &mut FormattingInformations) -> 
                 let mut founded = false;
 
                 for o in iter.by_ref() {
-                    if !matches!(o, Object::Bold) {
-                        objects.push(o.clone())
-                    } else {
-                        founded = true;
-                        break;
+                    match o {
+                        Object::Bold | Object::Italic | Object::Underline | Object::StrikeThrough => {
+                            founded = true;
+                            break;
+                        },
+                        _ => objects.push(o.clone())
                     }
                 }
-
-                if founded {
-                    result.push_str(&format!("<strong>{f}</strong>", f = format_internal(objects, infos)));
-                } else {
-                    result.push_str(format_internal(objects, infos).as_str())
-                }
-            }
-            Object::Underline => {
-                if !infos.in_paragraph {
-                    result.push_str("<p>");
-                    infos.in_paragraph = true;
+                
+                if !founded {
+                    result.push_str(format_internal(objects, infos).as_str());
+                    continue;
                 }
 
-                let mut objects = Vec::new();
-                let mut founded = false;
-
-                for o in iter.by_ref() {
-                    if !matches!(o, Object::Underline) {
-                        objects.push(o.clone())
-                    } else {
-                        founded = true;
-                        break;
-                    }
-                }
-
-                if founded {
-                    result.push_str(&format!("<u>{f}</u>", f = format_internal(objects, infos)));
-                } else {
-                    result.push_str(format_internal(objects, infos).as_str())
+                match obj {
+                    Object::Bold => result.push_str(&format!("<strong>{f}</strong>", f = format_internal(objects, infos))),
+                    Object::Italic => result.push_str(&format!("<i>{f}</i>", f = format_internal(objects, infos))),
+                    Object::Underline => result.push_str(&format!("<u>{f}</u>", f = format_internal(objects, infos))),
+                    Object::StrikeThrough => result.push_str(&format!("<s>{f}</s>", f = format_internal(objects, infos))),
+                    _ => result.push_str(format_internal(objects, infos).as_str()),
                 }
             }
         }

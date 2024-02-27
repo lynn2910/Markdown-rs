@@ -52,3 +52,20 @@ fn parse_link(){
 
     assert_eq!(obj, "<p>Click <a href=\"https://google.com\" target=\"_blank\">here</a> to go to the google home page.</p>")
 }
+
+#[wasm_bindgen_test]
+fn parse_image(){
+    let url = "https://www.google.com/url?sa=i&url=https%3A%2F%2Ffr.wikipedia.org%2Fwiki%2FGoogle_Images&psig=AOvVaw2iuU2SDmWEqDXDXeTVyA4f&ust=1709134258767000&source=images&cd=vfe&opi=89978449&ved=0CBIQjRxqFwoTCOCL-rTry4QDFQAAAAAdAAAAABAE";
+    let source = format!("Here is the logo of google Images: ![google image]({url})");
+    let obj = markdown_rs::parse(source);
+
+    assert_eq!(obj, format!(r#"<p>Here is the logo of google Images: </p><img src="{url}" alt="google image">"#, url=url));
+}
+
+#[wasm_bindgen_test]
+fn parse_bold_italic_underline(){
+    let source = "**bold**, __now underlined__, ~~this sentence is bad~~ and *now I talk in italic*".to_string();
+    let obj = markdown_rs::parse(source);
+
+    assert_eq!(obj, "<p><strong>bold</strong>, <u>now underlined</u>, <s>this sentence is bad</s> and <i>now I talk in italic</i></p>")
+}
