@@ -22,8 +22,7 @@ pub struct ObjectStyle {
     bold: bool,
     underline: bool,
     italic: bool,
-    strike_through: bool,
-    head: bool,
+    strike_through: bool
 }
 
 pub(crate) fn parse(source: String) -> Vec<Object> {
